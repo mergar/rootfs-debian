@@ -14,9 +14,10 @@ if [ -z "${DEBOOTSTRAP_CMD}" -o ! -x "${DEBOOTSTRAP_CMD}" ]; then
 	exit 1
 fi
 
-echo "/bin/bash ${DEBOOTSTRAP_CMD} --include=openssh-server,locales,rsync,sharutils,psmisc,patch,less,apt,init-system-helpers,iproute2,isc-dhcp-client --components main,contrib --arch=amd64 --no-check-gpg ${CODE_NAME} ${rootfs_dir} ${SRC_MIRROR}"
+set -o xtrace
 /bin/bash ${DEBOOTSTRAP_CMD} --include=openssh-server,locales,rsync,sharutils,psmisc,patch,less,apt,init-system-helpers,iproute2,isc-dhcp-client --components main,contrib --arch=amd64 --no-check-gpg ${CODE_NAME} ${rootfs_dir} ${SRC_MIRROR}
 ret=$?
+set +o xtrace
 if [ ${ret} -ne 0 ]; then
 	echo "debootstrap failed"
 	exit ${ret}
