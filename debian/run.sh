@@ -1,7 +1,7 @@
 #!/bin/sh
-CODE_NAME=$(  lsb_release -cs )
+VERSION_CODENAME=$(  lsb_release -cs )
 SRC_MIRROR="http://ftp.de.debian.org/debian/"
-mydir="jail-debian-${CODE_NAME}-rootfs"
+mydir="jail-debian-${VERSION_CODENAME}-rootfs"
 my_parent_dir="/root"
 rootfs_dir="${my_parent_dir}/${mydir}"
 [ -d ${rootfs_dir} ] && rm -rf ${rootfs_dir}
@@ -15,7 +15,7 @@ if [ -z "${DEBOOTSTRAP_CMD}" -o ! -x "${DEBOOTSTRAP_CMD}" ]; then
 fi
 
 set -o xtrace
-/bin/bash ${DEBOOTSTRAP_CMD} --include=openssh-server,locales,rsync,sharutils,psmisc,patch,less,apt,init-system-helpers,iproute2,isc-dhcp-client --components main,contrib --arch=amd64 --no-check-gpg ${CODE_NAME} ${rootfs_dir} ${SRC_MIRROR}
+/bin/bash ${DEBOOTSTRAP_CMD} --include=openssh-server,locales,rsync,sharutils,psmisc,patch,less,apt,init-system-helpers,iproute2,isc-dhcp-client --components main,contrib --arch=amd64 --no-check-gpg ${VERSION_CODENAME} ${rootfs_dir} ${SRC_MIRROR}
 ret=$?
 set +o xtrace
 if [ ${ret} -ne 0 ]; then
@@ -24,18 +24,28 @@ if [ ${ret} -ne 0 ]; then
 fi
 
 printf "APT::Cache-Start 251658240;" > ${rootfs_dir}/etc/apt/apt.conf.d/00freebsd
+
 cat > ${rootfs_dir}/etc/apt/sources.list <<EOF
-deb http://%%SRC_MIRROR%%/debian/ ${CODE_NAME} main
-deb-src http://%%SRC_MIRROR%%/debian/ ${CODE_NAME} main
+deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main
+deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main
 
-deb http://security.debian.org/debian-security ${CODE_NAME}-security main contrib
-deb-src http://security.debian.org/debian-security ${CODE_NAME}-security main contrib
+deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main contrib
+deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main contrib
 
-deb http://%%SRC_MIRROR%%/debian/ ${CODE_NAME}-updates main contrib
-deb-src http://%%SRC_MIRROR%%/debian/ ${CODE_NAME}-updates main contrib
+deb http://security.debian.org/debian-security ${VERSION_CODENAME}-security main contrib
+deb-src http://security.debian.org/debian-security ${VERSION_CODENAME}-security main contrib
+EOF
 
-#deb http://%%SRC_MIRROR%%/debian/ ${CODE_NAME}-backports main
-#deb-src http://%%SRC_MIRROR%%/debian/ ${CODE_NAME}-backports main
+# template for CBSD preparebase (replace %%VERSION_CODENAME/SRC_MIRROR%%)
+cat > ${rootfs_dir}/etc/apt/sources.list-tpl <<EOF
+deb %%SRC_MIRROR%%/debian/ %%VERSION_CODENAME%% main
+deb-src %%SRC_MIRROR%%/debian/ %%VERSION_CODENAME%% main
+
+deb %%SRC_MIRROR%%/debian/ %%VERSION_CODENAME%%-updates main contrib
+deb-src %%SRC_MIRROR%%/debian/ %%VERSION_CODENAME%%-updates main contrib
+
+deb http://security.debian.org/debian-security %%VERSION_CODENAME%%-security main contrib
+deb-src http://security.debian.org/debian-security %%VERSION_CODENAME%%-security main contrib
 EOF
 
 if [ ! -f ${rootfs_dir}/bin/bash ]; then
@@ -45,5 +55,14 @@ fi
 
 truncate -s0 ${rootfs_dir}/etc/resolv.conf
 
-cd ${my_parent_dir}
-tar cfz ${mydir}.tgz ${mydir}
+if [ -r /proc/cpuinfo ]; then
+	_hwnum=$( grep -c ^processor /proc/cpuinfo )
+fi
+
+[ -z "${_hwnum}" ] && _hwnum="4"
+set -o xtrace
+cd ${rootfs_dir}
+env XZ_OPT="--threads=${_hwnum} --best" tar -cJf ${my_parent_dir}/${mydir}.txz . --numeric-owner
+ret=$?
+set +o xtrace
+exit ${ret}
