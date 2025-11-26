@@ -1,7 +1,7 @@
 #!/bin/sh
 VERSION_CODENAME=$(  lsb_release -cs )
-SRC_MIRROR="http://ftp.de.debian.org/debian/"
-mydir="jail-debian-${VERSION_CODENAME}-rootfs"
+SRC_MIRROR="http://de.deb.devuan.org/merged/"
+mydir="jail-devuan-${VERSION_CODENAME}-rootfs"
 my_parent_dir="/root"
 rootfs_dir="${my_parent_dir}/${mydir}"
 [ -d ${rootfs_dir} ] && rm -rf ${rootfs_dir}
@@ -26,26 +26,32 @@ fi
 printf "APT::Cache-Start 251658240;" > ${rootfs_dir}/etc/apt/apt.conf.d/00freebsd
 
 cat > ${rootfs_dir}/etc/apt/sources.list <<EOF
-deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main
-deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main
+deb http://de.deb.devuan.org/merged ${VERSION_CODENAME} main non-free-firmware
+deb-src http://de.deb.devuan.org/merged ${VERSION_CODENAME} main non-free-firmware
 
-deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main contrib
-deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main contrib
+deb http://de.deb.devuan.org/merged ${VERSION_CODENAME}-security main non-free-firmware
+deb-src http://de.deb.devuan.org/merged ${VERSION_CODENAME}-security main non-free-firmware
 
-deb http://security.debian.org/debian-security ${VERSION_CODENAME}-security main contrib
-deb-src http://security.debian.org/debian-security ${VERSION_CODENAME}-security main contrib
+# ${VERSION_CODENAME}-updates, to get updates before a point release is made;
+# see https://www.debian.org/doc/manuals/debian-reference/ch02.en.html#_updates_and_backports
+deb http://de.deb.devuan.org/merged ${VERSION_CODENAME}-updates main non-free-firmware
+deb-src http://de.deb.devuan.org/merged ${VERSION_CODENAME}-updates main non-free-firmware
+
 EOF
 
 # template for CBSD preparebase (replace %%VERSION_CODENAME/SRC_MIRROR%%)
 cat > ${rootfs_dir}/etc/apt/sources.list-tpl <<EOF
-deb %%SRC_MIRROR%%/debian/ %%VERSION_CODENAME%% main
-deb-src %%SRC_MIRROR%%/debian/ %%VERSION_CODENAME%% main
+deb %%SRC_MIRROR%%/merged ${VERSION_CODENAME} main non-free-firmware
+deb-src %%SRC_MIRROR%%/merged ${VERSION_CODENAME} main non-free-firmware
 
-deb %%SRC_MIRROR%%/debian/ %%VERSION_CODENAME%%-updates main contrib
-deb-src %%SRC_MIRROR%%/debian/ %%VERSION_CODENAME%%-updates main contrib
+deb %%SRC_MIRROR%%/merged ${VERSION_CODENAME}-security main non-free-firmware
+deb-src %%SRC_MIRROR%%/merged ${VERSION_CODENAME}-security main non-free-firmware
 
-deb http://security.debian.org/debian-security %%VERSION_CODENAME%%-security main contrib
-deb-src http://security.debian.org/debian-security %%VERSION_CODENAME%%-security main contrib
+# ${VERSION_CODENAME}-updates, to get updates before a point release is made;
+# see https://www.debian.org/doc/manuals/debian-reference/ch02.en.html#_updates_and_backports
+deb %%SRC_MIRROR%%/merged ${VERSION_CODENAME}-updates main non-free-firmware
+deb-src %%SRC_MIRROR%%/merged ${VERSION_CODENAME}-updates main non-free-firmware
+
 EOF
 
 if [ ! -f ${rootfs_dir}/bin/bash ]; then
