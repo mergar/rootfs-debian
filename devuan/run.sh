@@ -65,6 +65,13 @@ if [ -r /proc/cpuinfo ]; then
 	_hwnum=$( grep -c ^processor /proc/cpuinfo )
 fi
 
+cat > ${rootfs_dir}/etc/rc <<EOF
+#!/bin/sh
+/usr/bin/find /etc/rc3.d -type l -name S\* | while read _f; do
+	\${_f} start
+done
+EOF
+
 [ -z "${_hwnum}" ] && _hwnum="4"
 set -o xtrace
 cd ${rootfs_dir}
