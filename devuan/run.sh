@@ -4,6 +4,8 @@ SRC_MIRROR="http://de.deb.devuan.org/merged/"
 mydir="jail-devuan-${VERSION_CODENAME}-rootfs"
 my_parent_dir="/root"
 rootfs_dir="${my_parent_dir}/${mydir}"
+
+if [ 1 -gt 2 ]; then
 [ -d ${rootfs_dir} ] && rm -rf ${rootfs_dir}
 [ ! -d ${rootfs_dir} ] && mkdir -p ${rootfs_dir}
 
@@ -58,6 +60,7 @@ if [ ! -f ${rootfs_dir}/bin/bash ]; then
 	echo "No such distribution (bash not found) in ${rootfs_dir}"
 	exit 1
 fi
+fi 
 
 truncate -s0 ${rootfs_dir}/etc/resolv.conf
 
@@ -70,6 +73,28 @@ cat > ${rootfs_dir}/etc/rc <<EOF
 /usr/bin/find /etc/rc3.d -type l -name S\* | while read _f; do
 	\${_f} start
 done
+EOF
+
+# disable ssh
+for i in rc0.d rc1.d rc2.d rc3.d rc4.d rc5.d rc6.d rcS.d; do
+	find ${rootfs_dir}/etc/${i} -type l -name S*ssh -delete
+done
+
+cat >  ${rootfs_dir}/etc/motd <<EOF
+
+  This environment uses SysVinit as a service initialization system.
+  Please use appropriate utilities to manage services, e.g.:
+
+  Enable service:
+    update-rc.d ssh defaults
+
+  Disable service:
+    update-rc.d -f ssh remove
+
+  List of services:
+    service --status-all
+
+
 EOF
 
 [ -z "${_hwnum}" ] && _hwnum="4"
